@@ -6,6 +6,7 @@ config.log
 config.status
 config/
 CSharp/cpp/quantlib_wrap.cpp
+CSharp/cpp/quantlib_wrap.h
 CSharp/cpp/build
 CSharp/csharp/obj
 CSharp/examples/bin
@@ -63,6 +64,8 @@ testCaseCollection.xml
 *.suo
 *.vcproj.*.user
 *.vcxproj.user
+*.VC.db
+*.VC.opendb
 *.log
 *.sdf
 *.opensdf

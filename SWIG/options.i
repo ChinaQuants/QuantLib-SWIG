@@ -6,6 +6,7 @@
  Copyright (C) 2008 Tito Ingargiola
  Copyright (C) 2010, 2012 Klaus Spanderen
  Copyright (C) 2015 Thema Consulting SA
+ Copyright (C) 2016 Gouthaman Balaraman
 
  This file is part of QuantLib, a free-software/open-source library
  for financial quantitative analysts and developers - http://quantlib.org/
@@ -31,6 +32,8 @@
 %include stl.i
 %include linearalgebra.i
 %include calibrationhelpers.i
+%include grid.i
+%include parameter.i
 
 // option and barrier types
 %{
@@ -379,6 +382,66 @@ class HestonModelPtr : public boost::shared_ptr<CalibratedModel> {
     }
 };
 
+
+
+%{
+using QuantLib::PiecewiseTimeDependentHestonModel;
+typedef boost::shared_ptr<CalibratedModel> PiecewiseTimeDependentHestonModelPtr;
+%}
+
+%rename(PiecewiseTimeDependentHestonModel) PiecewiseTimeDependentHestonModelPtr;
+class PiecewiseTimeDependentHestonModelPtr : public boost::shared_ptr<CalibratedModel> {
+    public:
+      %extend {
+         PiecewiseTimeDependentHestonModelPtr(
+              const Handle<YieldTermStructure>& riskFreeRate,
+              const Handle<YieldTermStructure>& dividendYield,
+              const Handle<Quote>& s0,
+              Real v0,
+              const Parameter& theta,
+              const Parameter& kappa,
+              const Parameter& sigma,
+              const Parameter& rho,
+              const TimeGrid& timeGrid) {
+            return new PiecewiseTimeDependentHestonModelPtr (
+                new PiecewiseTimeDependentHestonModel(riskFreeRate,
+                    dividendYield, s0, v0, theta, kappa, 
+                    sigma, rho, timeGrid));
+        }
+    
+        Real theta(Time t) const { 
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->theta(t);
+        }
+        Real kappa(Time t) const {
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->kappa(t);
+        }
+        Real sigma(Time t) const {
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->sigma(t);
+        }
+        Real rho(Time t)   const { 
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->rho(t);
+        }
+        Real v0()          const { 
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->v0();
+        }
+        Real s0()          const { 
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->s0();
+        }
+        const TimeGrid& timeGrid() const {
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->timeGrid();
+        }
+        const Handle<YieldTermStructure>& dividendYield() const {
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->dividendYield();
+        }
+        const Handle<YieldTermStructure>& riskFreeRate() const {
+            return boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(*self)->riskFreeRate();
+        }
+    
+    }
+};
+
+
+
 %{
 using QuantLib::AnalyticHestonEngine;
 typedef boost::shared_ptr<PricingEngine> AnalyticHestonEnginePtr;
@@ -408,6 +471,40 @@ class AnalyticHestonEnginePtr : public boost::shared_ptr<PricingEngine> {
             return new AnalyticHestonEnginePtr(
                 new AnalyticHestonEngine(hModel, relTolerance,maxEvaluations));
         }
+    }
+};
+
+%{
+using QuantLib::AnalyticPTDHestonEngine;
+typedef boost::shared_ptr<PricingEngine> AnalyticPTDHestonEnginePtr;
+%}
+
+%rename(AnalyticPTDHestonEngine) AnalyticPTDHestonEnginePtr;
+class AnalyticPTDHestonEnginePtr : public boost::shared_ptr<PricingEngine> {
+  public:
+    %extend {
+        AnalyticPTDHestonEnginePtr(
+            const PiecewiseTimeDependentHestonModelPtr & model,
+            Real relTolerance, Size maxEvaluations) {
+                const boost::shared_ptr<PiecewiseTimeDependentHestonModel> hmodel = 
+                    boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(model);
+                return new AnalyticPTDHestonEnginePtr(
+                    new AnalyticPTDHestonEngine(hmodel, relTolerance, maxEvaluations)
+            );
+        }
+
+        // Constructor using Laguerre integration
+        // and Gatheral's version of complex log.
+        AnalyticPTDHestonEnginePtr(
+            const PiecewiseTimeDependentHestonModelPtr & model,
+            Size integrationOrder = 144) {
+                const boost::shared_ptr<PiecewiseTimeDependentHestonModel> hmodel = 
+                    boost::dynamic_pointer_cast<PiecewiseTimeDependentHestonModel>(model);
+                return new AnalyticPTDHestonEnginePtr(
+                    new AnalyticPTDHestonEngine(hmodel, integrationOrder)
+            );
+        }
+    
     }
 };
 
@@ -1126,6 +1223,58 @@ class MCBarrierEnginePtr : public boost::shared_ptr<PricingEngine> {
 };
 
 %{
+using QuantLib::FdmSchemeDesc;
+%}
+
+struct FdmSchemeDesc {
+  enum FdmSchemeType { HundsdorferType, DouglasType, 
+                       CraigSneydType, ModifiedCraigSneydType, 
+                       ImplicitEulerType, ExplicitEulerType };
+  
+  FdmSchemeDesc(FdmSchemeType type, Real theta, Real mu);
+  
+  const FdmSchemeType type;
+  const Real theta, mu;
+
+  // some default scheme descriptions
+  static FdmSchemeDesc Douglas();
+  static FdmSchemeDesc ImplicitEuler();
+  static FdmSchemeDesc ExplicitEuler();
+  static FdmSchemeDesc CraigSneyd();
+  static FdmSchemeDesc ModifiedCraigSneyd(); 
+  static FdmSchemeDesc Hundsdorfer();
+  static FdmSchemeDesc ModifiedHundsdorfer();
+};
+
+%{
+using QuantLib::FdBlackScholesBarrierEngine;
+typedef boost::shared_ptr<PricingEngine> FdBlackScholesBarrierEnginePtr;
+%}
+
+%rename(FdBlackScholesBarrierEngine) FdBlackScholesBarrierEnginePtr;
+class FdBlackScholesBarrierEnginePtr : public boost::shared_ptr<PricingEngine> {
+  public:
+    %extend {
+        FdBlackScholesBarrierEnginePtr(const GeneralizedBlackScholesProcessPtr& process,
+                                       Size tGrid = 100, Size xGrid = 100, Size dampingSteps = 0,
+                                       const FdmSchemeDesc& schemeDesc = FdmSchemeDesc::Douglas(),
+                                       bool localVol = false, 
+                                       Real illegalLocalVolOverwrite = -Null<Real>()) {
+            boost::shared_ptr<GeneralizedBlackScholesProcess> bsProcess =
+                 boost::dynamic_pointer_cast<GeneralizedBlackScholesProcess>(
+                                                                     process);
+            QL_REQUIRE(bsProcess, "Black-Scholes process required");
+            return new FdBlackScholesBarrierEnginePtr(
+                            new FdBlackScholesBarrierEngine(bsProcess,
+                                                              tGrid,  xGrid, dampingSteps, 
+                                                              schemeDesc, localVol,
+                                                              illegalLocalVolOverwrite));
+        }
+  }
+};
+
+
+%{
 using QuantLib::AnalyticBinaryBarrierEngine;
 typedef boost::shared_ptr<PricingEngine> AnalyticBinaryBarrierEnginePtr;
 %}
@@ -1838,6 +1987,59 @@ using QuantLib::VannaVolgaDoubleBarrierEngine;
 using QuantLib::DeltaVolQuote;
 typedef boost::shared_ptr<PricingEngine> VannaVolgaDoubleBarrierEnginePtr;
 %}
+
+#if defined(SWIGJAVA) || defined(SWIGCSHARP)
+%rename(_DeltaVolQuote) DeltaVolQuote;
+#else
+%ignore DeltaVolQuote;
+#endif
+class DeltaVolQuote : public Quote {
+  public:
+    enum DeltaType { Spot, Fwd, PaSpot, PaFwd };
+    enum AtmType { AtmNull, AtmSpot, AtmFwd, AtmDeltaNeutral,
+                   AtmVegaMax, AtmGammaMax, AtmPutCall50 };
+#if defined(SWIGJAVA) || defined(SWIGCSHARP)
+  private:
+    DeltaVolQuote();
+#endif
+};
+
+%template(DeltaVolQuote) boost::shared_ptr<DeltaVolQuote>;
+IsObservable(boost::shared_ptr<DeltaVolQuote>);
+
+%extend boost::shared_ptr<DeltaVolQuote> {
+    static const DeltaVolQuote::DeltaType Spot = DeltaVolQuote::Spot;
+    static const DeltaVolQuote::DeltaType Fwd = DeltaVolQuote::Fwd;
+    static const DeltaVolQuote::DeltaType PaSpot = DeltaVolQuote::PaSpot;
+    static const DeltaVolQuote::DeltaType PaFwd = DeltaVolQuote::PaFwd;
+
+    static const DeltaVolQuote::AtmType AtmNull = DeltaVolQuote::AtmNull;
+    static const DeltaVolQuote::AtmType AtmSpot = DeltaVolQuote::AtmSpot;
+    static const DeltaVolQuote::AtmType AtmFwd = DeltaVolQuote::AtmFwd;
+    static const DeltaVolQuote::AtmType AtmDeltaNeutral =
+                                               DeltaVolQuote::AtmDeltaNeutral;
+    static const DeltaVolQuote::AtmType AtmVegaMax =
+                                               DeltaVolQuote::AtmVegaMax;
+    static const DeltaVolQuote::AtmType AtmGammaMax =
+                                               DeltaVolQuote::AtmGammaMax;
+    static const DeltaVolQuote::AtmType AtmPutCall50 =
+                                               DeltaVolQuote::AtmPutCall50;
+
+    shared_ptr<DeltaVolQuote>(Real delta,
+                              const Handle<Quote>& vol,
+                              Time maturity,
+                              DeltaVolQuote::DeltaType deltaType) {
+        return new boost::shared_ptr<DeltaVolQuote>(
+                          new DeltaVolQuote(delta, vol, maturity, deltaType));
+    }
+    shared_ptr<DeltaVolQuote>(const Handle<Quote>& vol,
+                              DeltaVolQuote::DeltaType deltaType,
+                              Time maturity,
+                              DeltaVolQuote::AtmType atmType) {
+        return new boost::shared_ptr<DeltaVolQuote>(
+                        new DeltaVolQuote(vol, deltaType, maturity, atmType));
+    }
+}
 
 %template(DeltaVolQuoteHandle) Handle<DeltaVolQuote>;
 IsObservable(Handle<DeltaVolQuote>);
