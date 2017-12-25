@@ -19,6 +19,8 @@
 
 // Undefine symbols that are also used in quantlib
 
+%feature("autodoc", "2");
+
 #if defined(SWIGPYTHON)
 %{
 #ifdef barrier
@@ -79,8 +81,9 @@
 
 %{
 #include <ql/quantlib.hpp>
+#include <qlext/quantlibext.hpp>
 
-#if QL_HEX_VERSION < 0x011100f0
+#if QL_HEX_VERSION < 0x011200f0
     #error using an old version of QuantLib, please update
 #endif
 
@@ -148,9 +151,7 @@
 #endif
 
 // common name mappings
-#if defined(SWIGMZSCHEME) || defined(SWIGGUILE)
-%rename(">string")       __str__;
-#elif defined(SWIGPERL)
+#if defined(SWIGPERL)
 %rename("to_string")     __str__;
 #elif defined(SWIGJAVA)
 %rename(add)           operator+;
@@ -180,7 +181,9 @@
 %include common.i
 %include vectors.i
 %include basketoptions.i
+%include blackformula.i
 %include bonds.i
+%include bonds_ext.i
 %include bondfunctions.i
 %include calendars.i
 %include calibrationhelpers.i
@@ -225,6 +228,7 @@
 %include payoffs.i
 %include piecewiseyieldcurve.i
 %include randomnumbers.i
+%include ratehelpers_ext.i
 %include ratehelpers.i
 %include rounding.i
 %include sampledcurve.i
@@ -234,6 +238,7 @@
 %include statistics.i
 %include stochasticprocess.i
 %include swap.i
+%include swap_ext.i
 %include swaption.i
 %include termstructures.i
 %include timebasket.i

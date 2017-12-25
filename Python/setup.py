@@ -1,4 +1,4 @@
-# -*- coding: iso-8859-1 -*-
+# -*- coding: utf-8 -*-
 """
  Copyright (C) 2000, 2001, 2002, 2003 RiskMap srl
  Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 StatPro Italia srl
@@ -17,17 +17,17 @@
  FOR A PARTICULAR PURPOSE.  See the license for more details.
 """
 
-import os, sys, math
+import os, sys, math, codecs
 from distutils.cmd import Command
 from distutils.command.build_ext import build_ext
 from distutils.command.build import build
 from distutils.ccompiler import get_default_compiler
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 from distutils import sysconfig
 
 class test(Command):
     # Original version of this class posted
-    # by Berthold Höllmann to distutils-sig@python.org
+    # by Berthold Hï¿½llmann to distutils-sig@python.org
     description = "test the distribution prior to install"
 
     user_options = [
@@ -121,6 +121,11 @@ class my_build_ext(build_ext):
                 QL_INSTALL_DIR = os.environ['QL_DIR']
                 self.include_dirs += [QL_INSTALL_DIR]
                 self.library_dirs += [os.path.join(QL_INSTALL_DIR, 'lib')]
+
+                QLEXT_INSTALL_DIR = os.environ['QLEXT_DIR']
+                self.include_dirs += [QLEXT_INSTALL_DIR]
+                self.library_dirs += [os.path.join(QLEXT_INSTALL_DIR, 'lib')]
+
             except KeyError:
                 print('warning: unable to detect QuantLib installation')
 
@@ -157,6 +162,8 @@ class my_build_ext(build_ext):
                 os.popen('quantlib-config --cflags').read()[:-1].split()
             ql_link_args = \
                 os.popen('quantlib-config --libs').read()[:-1].split()
+
+            ql_link_args.append('-lQuantLibExt')
 
             self.define += [ (arg[2:],None) for arg in ql_compile_args
                              if arg.startswith('-D') ]
@@ -229,7 +236,7 @@ classifiers = [
 ]
 
 setup(name             = "QuantLib-Python",
-      version          = "1.11",
+      version          = "1.12",
       description      = "Python bindings for the QuantLib library",
       long_description = """
 QuantLib (http://quantlib.org/) is a C++ library for financial quantitative
@@ -239,7 +246,8 @@ framework for quantitative finance.
       author           = "QuantLib Team",
       author_email     = "quantlib-users@lists.sourceforge.net",
       url              = "http://quantlib.org",
-      license          = open('../LICENSE.TXT','r+').read(),
+      license          = codecs.open('../LICENSE.TXT','r+',
+                                     encoding='utf8').read(),
       classifiers      = classifiers,
       py_modules       = ['QuantLib.__init__','QuantLib.QuantLib'],
       ext_modules      = [Extension("QuantLib._QuantLib",
@@ -252,4 +260,3 @@ framework for quantitative finance.
                           'build_ext': my_build_ext
                           }
       )
-
