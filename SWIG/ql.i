@@ -225,6 +225,7 @@
 %include optimizers.i
 %include parameter.i
 %include options.i
+%include options_ext.i
 %include payoffs.i
 %include piecewiseyieldcurve.i
 %include randomnumbers.i
