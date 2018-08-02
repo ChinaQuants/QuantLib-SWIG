@@ -27,7 +27,9 @@ typedef boost::shared_ptr<Instrument> SpreadOptionPtr;
 
 %rename(SpreadOption) SpreadOptionPtr;
 class SpreadOptionPtr : public boost::shared_ptr<Instrument> {
-    SpreadOptionPtr(
+  public:
+    %extend {
+        SpreadOptionPtr(
                 const boost::shared_ptr<Payoff>& payoff,
                 const boost::shared_ptr<Exercise>& exercise) {
             boost::shared_ptr<PlainVanillaPayoff> stPayoff =
@@ -35,10 +37,31 @@ class SpreadOptionPtr : public boost::shared_ptr<Instrument> {
             QL_REQUIRE(stPayoff, "wrong payoff given");
             return new SpreadOptionPtr(new SpreadOption(stPayoff, exercise));
         }
+    }
 };
 
 %{
 using QuantLib::KirkSpreadOptionEngine;
+typedef boost::shared_ptr<PricingEngine> KirkSpreadOptionEnginePtr;
 %}
+
+%rename(KirkSpreadOptionEngine) KirkSpreadOptionEnginePtr;
+class KirkSpreadOptionEnginePtr
+    : public boost::shared_ptr<PricingEngine> {
+  public:
+    %extend {
+        KirkSpreadOptionEnginePtr(
+                const BlackProcessPtr& process1,
+                const BlackProcessPtr& process2,
+                const Handle<Quote>& correlation) {
+        boost::shared_ptr<BlackProcess> bsProcess1 =
+                 boost::dynamic_pointer_cast<BlackProcess>(process1);
+        boost::shared_ptr<BlackProcess> bsProcess2 =
+                 boost::dynamic_pointer_cast<BlackProcess>(process2);
+                return new KirkSpreadOptionEnginePtr(
+                   new KirkSpreadOptionEngine(bsProcess1, bsProcess2, correlation));
+        }
+    }
+};
 
 #endif
