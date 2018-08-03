@@ -171,7 +171,7 @@ class my_build_ext(build_ext):
                 os.popen('quantlib-config --cflags').read()[:-1].split()
             ql_link_args = \
                 os.popen('quantlib-config --libs').read()[:-1].split()
-
+            ql_link_args.append('-lQuantLib')
             ql_link_args.append('-lQuantLibExt')
 
             self.define += [ (arg[2:],None) for arg in ql_compile_args
