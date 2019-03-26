@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([QuantLib-SWIG], [1.14],
+AC_INIT([QuantLib-SWIG], [1.16],
         [quantlib-dev@lists.sourceforge.net],
         [QuantLib-SWIG])
 AC_PREREQ(2.50)
@@ -78,7 +78,8 @@ AC_ARG_ENABLE([ruby],
 AM_CONDITIONAL(BUILD_RUBY, test "$build_ruby" != "no")
 
 AC_PATH_PROGS([MCS], [gmcs mcs gmcs2])
-AM_CONDITIONAL(HAVE_MCS, test "x${MCS}" != "x")
+AC_PATH_PROGS([MONO], [mono])
+AM_CONDITIONAL(HAVE_MCS, test "x${MCS}" != "x" && test "x${MONO}" != "x")
 AC_ARG_ENABLE([csharp],
               AC_HELP_STRING([--disable-csharp],
                              [If disabled, the C# module
@@ -116,6 +117,22 @@ AC_ARG_ENABLE([java-autoload],
               [java_autoload=yes])
 AM_CONDITIONAL(JAVA_AUTOLOAD, test "$java_autoload" != "no")
 
+AC_ARG_ENABLE([java-finalizer],
+              AC_HELP_STRING([--disable-java-finalizer],
+                             [If disabled, the finalizers
+			     will not be generated.  Be careful.]),
+              [java_finalizer=$enableval],
+              [java_finalizer=yes])
+AM_CONDITIONAL(JAVA_FINALIZER, test "$java_finalizer" != "no")
+
+AC_ARG_ENABLE([java-autocloseable],
+              AC_HELP_STRING([--enable-java-autocloseable],
+                             [If enabled, the java Objects will implement AutoCloseable]),
+              [java_autocloseable=$enableval],
+              [java_autocloseable=no])
+AM_CONDITIONAL(JAVA_AUTOCLOSEABLE, test "$java_autocloseable" != "no")
+
+
 AC_ARG_WITH([jdk-include],
             AC_HELP_STRING([--with-jdk-include=INCLUDE_PATH],
                            [Supply the location of JDK header files]),
@@ -133,6 +150,17 @@ if test [ -n "$ql_jdk_sys_include_path" ] ; then
    AC_SUBST([JDK_SYSTEM_INCLUDE],["-I${ql_jdk_sys_include_path}"])
 fi
 
+
+AC_PATH_PROG([SCALAC], [scalac])
+AC_PATH_PROG([SCALA], [scala])
+AM_CONDITIONAL(HAVE_SCALA, test "x${SCALAC}" != "x" && test "x${JAR}" != "x")
+AC_ARG_ENABLE([scala],
+              AC_HELP_STRING([--disable-scala],
+                             [If disabled, the scala examples
+                              will not be built]),
+              [build_scala=$enableval],
+              [build_scala=yes])
+AM_CONDITIONAL(BUILD_SCALA, test "$build_scala" != "no")
 
 # flags
 
