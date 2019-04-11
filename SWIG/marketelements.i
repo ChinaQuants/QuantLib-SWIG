@@ -90,7 +90,7 @@ class CompositeQuote : public Quote {
     }
 };
 
-#endif
+// #endif
 
 #if defined(SWIGCSHARP)
 SWIG_STD_VECTOR_ENHANCED( boost::shared_ptr<Quote> )

@@ -200,8 +200,8 @@
 %include payoffs.i
 %include piecewiseyieldcurve.i
 %include randomnumbers.i
-%include ratehelpers_ext.i
 %include ratehelpers.i
+%include ratehelpers_ext.i
 %include rounding.i
 %include sampledcurve.i
 %include scheduler.i
