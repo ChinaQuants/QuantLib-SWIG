@@ -55,6 +55,7 @@ class SubPeriodsSwapRateHelper: public RateHelper {
                                  BusinessDayConvention fixedConvention, const Period& floatPayTenor,
                                  const boost::shared_ptr<IborIndex>& iborIndex, const DayCounter& floatingDayCount,
                                  DateGeneration::Rule rule = DateGeneration::Backward,
+                                 QuantLib::Ext::SubPeriodsCoupon::Type type = QuantLib::Ext::SubPeriodsCoupon::Compounding,
                                  const Period& fwdStart = 0 * Days,
                                  const Handle<YieldTermStructure>& discountingCurve = Handle<YieldTermStructure>());
 };

@@ -27,7 +27,7 @@ using QuantLib::SpreadOption;
 %shared_ptr(SpreadOption)
 class SpreadOption: public Instrument {
   public:
-    SpreadOption(const boost::shared_ptr<Payoff>& payoff,
+    SpreadOption(const boost::shared_ptr<PlainVanillaPayoff>& payoff,
                  const boost::shared_ptr<Exercise>& exercise);
 };
 

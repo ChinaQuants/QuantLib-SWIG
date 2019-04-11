@@ -56,7 +56,7 @@ class SubPeriodsSwap: public Swap {
     SubPeriodsSwap(const Date& effectiveDate, Real nominal, const Period& swapTenor, bool isPayer,
                    const Period& fixedTenor, Rate fixedRate, const Calendar& fixedCalendar,
                    const DayCounter& fixedDayCount, BusinessDayConvention fixedConvention, const Period& floatPayTenor,
-                   const boost::shared_ptr<IborIndexr>& iborIndex, const DayCounter& floatingDayCount,
+                   const boost::shared_ptr<IborIndex>& iborIndex, const DayCounter& floatingDayCount,
                    DateGeneration::Rule rule = DateGeneration::Backward);
 }; 
  
