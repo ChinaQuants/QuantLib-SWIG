@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([QuantLib-SWIG], [1.17],
+AC_INIT([QuantLib-SWIG], [1.18],
         [quantlib-dev@lists.sourceforge.net],
         [QuantLib-SWIG])
 AC_PREREQ(2.50)
@@ -56,16 +56,6 @@ AC_ARG_ENABLE([python],
               [build_python=$enableval],
               [build_python=yes])
 AM_CONDITIONAL(BUILD_PYTHON, test "$build_python" != "no")
-
-AC_PATH_PROG([RUBY], [ruby])
-AM_CONDITIONAL(HAVE_RUBY, test "x${RUBY}" != "x")
-AC_ARG_ENABLE([ruby],
-              AC_HELP_STRING([--disable-ruby],
-                             [If disabled, the Ruby module
-                              will not be built]),
-              [build_ruby=$enableval],
-              [build_ruby=yes])
-AM_CONDITIONAL(BUILD_RUBY, test "$build_ruby" != "no")
 
 AC_PATH_PROGS([MCS], [gmcs mcs gmcs2])
 AC_PATH_PROGS([MONO], [mono])
@@ -171,10 +161,9 @@ AC_CONFIG_FILES([
     Java/Makefile
     Python/Makefile
     Python/setup.py
+    Python/setup-old.py
     R/Makefile
     R/DESCRIPTION
-    Ruby/Makefile
-    Ruby/setup.rb
     Scala/Makefile])
 AC_OUTPUT
 
