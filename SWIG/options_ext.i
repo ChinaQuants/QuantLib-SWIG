@@ -20,28 +20,5 @@
 
 %include options.i
 
-%{
-using QuantLib::SpreadOption;
-%}
-
-%shared_ptr(SpreadOption)
-class SpreadOption: public Instrument {
-  public:
-    SpreadOption(const boost::shared_ptr<PlainVanillaPayoff>& payoff,
-                 const boost::shared_ptr<Exercise>& exercise);
-};
-
-%{
-using QuantLib::KirkSpreadOptionEngine;
-%}
-
-%shared_ptr(KirkSpreadOptionEngine)
-class KirkSpreadOptionEngine: public PricingEngine {
-  public:
-    KirkSpreadOptionEngine(
-                const boost::shared_ptr<BlackProcess>& process1,
-                const boost::shared_ptr<BlackProcess>& process2,
-                const Handle<Quote>& correlation);
-};
 
 #endif
