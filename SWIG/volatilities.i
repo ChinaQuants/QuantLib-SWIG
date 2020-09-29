@@ -70,6 +70,7 @@ using QuantLib::BlackVolTermStructure;
 using QuantLib::LocalVolTermStructure;
 using QuantLib::OptionletVolatilityStructure;
 using QuantLib::SwaptionVolatilityStructure;
+using QuantLib::YoYOptionletVolatilitySurface;
 %}
 
 %shared_ptr(VolatilityTermStructure);
@@ -141,6 +142,79 @@ class OptionletVolatilityStructure : public VolatilityTermStructure {
 
 %template(OptionletVolatilityStructureHandle) Handle<OptionletVolatilityStructure>;
 %template(RelinkableOptionletVolatilityStructureHandle) RelinkableHandle<OptionletVolatilityStructure>;
+
+
+%shared_ptr(YoYOptionletVolatilitySurface)
+class YoYOptionletVolatilitySurface : public VolatilityTermStructure {
+  private:
+    YoYOptionletVolatilitySurface();
+  public:
+    Period observationLag() const;
+    Real frequency() const;
+    bool indexIsInterpolated() const;
+    Date baseDate() const;
+    Time timeFromBase(const Date& date,
+                      const Period& obsLag = Period(-1,Days)) const;
+    Real minStrike() const;
+    Real maxStrike() const;
+    Volatility baseLevel() const;
+    Volatility volatility(const Date& maturityDate, Real strike,
+                          const Period& obsLag = Period(-1,Days),
+                          bool extrapolate = false) const;
+    Volatility volatility(const Period& optionTenor, Real strike,
+                          const Period& obsLag = Period(-1,Days),
+                          bool extrapolate = false) const;
+    Real totalVariance(const Date& exerciseDate, Rate strike,
+                       const Period& obsLag = Period(-1,Days),
+                       bool extrapolate = false) const ;
+    Real totalVariance(const Period& optionTenor, Rate strike,
+                       const Period& obsLag = Period(-1,Days),
+                       bool extrapolate = false) const;
+};
+
+%template(YoYOptionletVolatilitySurfaceHandle) Handle<YoYOptionletVolatilitySurface>;
+%template(RelinkableYoYOptionletVolatilitySurface) RelinkableHandle<YoYOptionletVolatilitySurface>;
+
+
+%{
+using QuantLib::SmileSection;
+%}
+
+%shared_ptr(SmileSection);
+class SmileSection : public Observable {
+  private:
+    SmileSection();
+  public:
+    Real minStrike() const;
+    Real maxStrike() const;
+    Real atmLevel() const;
+    Real variance(Rate strike) const;
+    Volatility volatility(Rate strike) const;
+    virtual const Date& exerciseDate() const;
+    virtual VolatilityType volatilityType() const;
+    virtual Rate shift() const;
+    virtual const Date& referenceDate() const;
+    virtual Time exerciseTime() const;
+    virtual const DayCounter& dayCounter();
+    virtual Real optionPrice(Rate strike,
+                             Option::Type type = Option::Call,
+                             Real discount=1.0) const;
+    virtual Real digitalOptionPrice(Rate strike,
+                                    Option::Type type = Option::Call,
+                                    Real discount=1.0,
+                                    Real gap=1.0e-5) const;
+    virtual Real vega(Rate strike,
+                      Real discount=1.0) const;
+    virtual Real density(Rate strike,
+                         Real discount=1.0,
+                         Real gap=1.0E-4) const;
+    Volatility volatility(Rate strike, VolatilityType type, Real shift=0.0) const;
+};
+
+#if defined(SWIGCSHARP)
+SWIG_STD_VECTOR_ENHANCED( boost::shared_ptr<SmileSection> )
+#endif
+%template(SmileSectionVector) std::vector<boost::shared_ptr<SmileSection> >;
 
 
 %{
@@ -494,13 +568,47 @@ class SwaptionVolatilityMatrix : public SwaptionVolatilityDiscrete {
     VolatilityType volatilityType() const;
 };
 
+
 %{
+using QuantLib::SabrSmileSection;
+%}
+
+%shared_ptr(SabrSmileSection)
+class SabrSmileSection : public SmileSection {
+  public:
+    SabrSmileSection(const Date& d,
+                     Rate forward,
+                     const std::vector<Real>& sabrParameters,
+                     const DayCounter& dc = Actual365Fixed(),
+                     Real shift = 0.0);
+    SabrSmileSection(Time timeToExpiry,
+                     Rate forward,
+                     const std::vector<Real>& sabrParameters,
+                     Real shift = 0.0);
+    Real alpha() const;
+    Real beta() const;
+    Real nu() const;
+    Real rho() const;
+};
+
+
+%{
+using QuantLib::SwaptionVolatilityCube;
 using QuantLib::SwaptionVolCube1;
 using QuantLib::SwaptionVolCube2;
 %}
 
+%shared_ptr(SwaptionVolatilityCube);
+class SwaptionVolatilityCube : public SwaptionVolatilityDiscrete {
+    private:
+        SwaptionVolatilityCube();
+    public:
+        Rate atmStrike(const Date& optionDate,
+                       const Period& swapTenor) const;
+};
+
 %shared_ptr(SwaptionVolCube1);
-class SwaptionVolCube1 : public SwaptionVolatilityDiscrete {
+class SwaptionVolCube1 : public SwaptionVolatilityCube {
   public:
     SwaptionVolCube1(
              const Handle<SwaptionVolatilityStructure>& atmVolStructure,
@@ -528,10 +636,20 @@ class SwaptionVolCube1 : public SwaptionVolatilityDiscrete {
     Matrix denseSabrParameters() const;
     Matrix marketVolCube() const;
     Matrix volCubeAtmCalibrated() const;
+    %extend {
+        boost::shared_ptr<SabrSmileSection> smileSection(Time optionTime, Time swapLength, bool extr = false) {
+            SwaptionVolatilityStructure* base = dynamic_cast<SwaptionVolatilityStructure*>($self);
+            return boost::dynamic_pointer_cast<SabrSmileSection>(base->smileSection(optionTime, swapLength, extr));
+        }
+        boost::shared_ptr<SabrSmileSection> smileSection(const Period& optionTenor, const Period& swapTenor, bool extr = false) {
+            SwaptionVolatilityStructure* base = dynamic_cast<SwaptionVolatilityStructure*>($self);
+            return boost::dynamic_pointer_cast<SabrSmileSection>(base->smileSection(optionTenor, swapTenor, extr));
+        }
+    }
 };
 
 %shared_ptr(SwaptionVolCube2);
-class SwaptionVolCube2 : public SwaptionVolatilityDiscrete {
+class SwaptionVolCube2 : public SwaptionVolatilityCube {
   public:
     SwaptionVolCube2(const Handle<SwaptionVolatilityStructure>& atmVolStructure,
                      const std::vector<Period>& optionTenors,
@@ -544,38 +662,23 @@ class SwaptionVolCube2 : public SwaptionVolatilityDiscrete {
 };
 
 %{
-using QuantLib::SmileSection;
+using QuantLib::ConstantYoYOptionletVolatility;
 %}
 
-%shared_ptr(SmileSection);
-
-class SmileSection : public Observable {
-  private:
-    SmileSection();
+%shared_ptr(ConstantYoYOptionletVolatility)
+class ConstantYoYOptionletVolatility : public YoYOptionletVolatilitySurface {
   public:
-    Real variance(Rate strike) const;
-    Volatility volatility(Rate strike) const;
-    virtual const Date& exerciseDate() const;
-    virtual VolatilityType volatilityType() const;
-    virtual Rate shift() const;
-    virtual const Date& referenceDate() const;
-    virtual Time exerciseTime() const;
-    virtual const DayCounter& dayCounter();
-    virtual Real optionPrice(Rate strike,
-                             Option::Type type = Option::Call,
-                             Real discount=1.0) const;
-    virtual Real digitalOptionPrice(Rate strike,
-                                    Option::Type type = Option::Call,
-                                    Real discount=1.0,
-                                    Real gap=1.0e-5) const;
-    virtual Real vega(Rate strike,
-                      Real discount=1.0) const;
-    virtual Real density(Rate strike,
-                         Real discount=1.0,
-                         Real gap=1.0E-4) const;
-    Volatility volatility(Rate strike, VolatilityType type, Real shift=0.0) const;
+    ConstantYoYOptionletVolatility(Volatility volatility,
+                                   Natural settlementDays,
+                                   const Calendar &cal,
+                                   BusinessDayConvention bdc,
+                                   const DayCounter& dc,
+                                   const Period& observationLag,
+                                   Frequency frequency,
+                                   bool indexIsInterpolated,
+                                   Real minStrike = -1.0,
+                                   Real maxStrike = 100.0);
 };
-
 %{
 using QuantLib::FlatSmileSection;
 %}
@@ -656,25 +759,6 @@ export_smileinterpolation_curve(LinearInterpolatedSmileSection, Linear);
 export_smileinterpolation_curve(CubicInterpolatedSmileSection, Cubic);
 export_smileinterpolation_curve(MonotonicCubicInterpolatedSmileSection, MonotonicCubic);
 export_smileinterpolation_curve(SplineCubicInterpolatedSmileSection, SplineCubic);
-
-%{
-using QuantLib::SabrSmileSection;
-%}
-
-%shared_ptr(SabrSmileSection)
-
-class SabrSmileSection : public SmileSection {
-  public:
-    SabrSmileSection(const Date& d,
-                     Rate forward,
-                     const std::vector<Real>& sabrParameters,
-                     const DayCounter& dc = Actual365Fixed(),
-                     Real shift = 0.0);
-    SabrSmileSection(Time timeToExpiry,
-                     Rate forward,
-                     const std::vector<Real>& sabrParameters,
-                     Real shift = 0.0);
-};
 
 %{
 using QuantLib::KahaleSmileSection;
@@ -864,7 +948,7 @@ Real sabrVolatility(Rate strike,
 
 Real shiftedSabrVolatility(Rate strike,
                              Rate forward,
-                             Time expriyTime,
+                             Time expiryTime,
                              Real alpha,
                              Real beta,
                              Real nu,

@@ -3,7 +3,7 @@
  Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2009 StatPro Italia srl
  Copyright (C) 2005 Dominic Thuillier
  Copyright (C) 2010, 2011 Lluis Pujol Bajador
- Copyright (C) 2017, 2018, 2019 Matthias Lungwitz
+ Copyright (C) 2017, 2018, 2019, 2020 Matthias Lungwitz
 
  This file is part of QuantLib, a free-software/open-source library
  for financial quantitative analysts and developers - http://quantlib.org/
@@ -44,6 +44,7 @@ class CashFlow : public Observable {
   public:
     Real amount() const;
     Date date() const;
+    bool hasOccurred(const Date& refDate = Date()) const;
 };
 
 #if defined(SWIGCSHARP)
@@ -57,6 +58,7 @@ typedef std::vector<boost::shared_ptr<CashFlow> > Leg;
 
 %{
 using QuantLib::SimpleCashFlow;
+using QuantLib::IndexedCashFlow;
 using QuantLib::Redemption;
 using QuantLib::AmortizingPayment;
 using QuantLib::Coupon;
@@ -83,6 +85,30 @@ class AmortizingPayment : public CashFlow {
   public:
     AmortizingPayment(Real amount, const Date& date);
 };
+
+
+%shared_ptr(IndexedCashFlow)
+class IndexedCashFlow : public CashFlow {
+  public:
+    IndexedCashFlow(Real notional,
+                    const boost::shared_ptr<Index>& index,
+                    const Date& baseDate,
+                    const Date& fixingDate,
+                    const Date& paymentDate,
+                    bool growthOnly = false);
+    Real notional() const;
+    Date baseDate() const;
+    Date fixingDate() const;
+    boost::shared_ptr<Index> index() const;
+    bool growthOnly() const;
+};
+
+%inline %{
+    boost::shared_ptr<IndexedCashFlow> as_indexed_cashflow(const boost::shared_ptr<CashFlow>& cf) {
+        return boost::dynamic_pointer_cast<IndexedCashFlow>(cf);
+    }
+%}
+
 
 %shared_ptr(Coupon)
 class Coupon : public CashFlow {
@@ -140,6 +166,13 @@ using QuantLib::FloatingRateCouponPricer;
 class FloatingRateCouponPricer {
   private:
     FloatingRateCouponPricer();
+  public:
+    virtual Real swapletPrice() const;
+    virtual Rate swapletRate() const;
+    virtual Real capletPrice(Rate effectiveCap) const;
+    virtual Rate capletRate(Rate effectiveCap) const;
+    virtual Real floorletPrice(Rate effectiveFloor) const;
+    virtual Rate floorletRate(Rate effectiveFloor) const;
 };
 
 void setCouponPricer(const Leg&,
@@ -280,8 +313,12 @@ class IborCouponPricer : public FloatingRateCouponPricer {
 %shared_ptr(BlackIborCouponPricer)
 class BlackIborCouponPricer : public IborCouponPricer {
   public:
+    enum TimingAdjustment { Black76, BivariateLognormal };
     BlackIborCouponPricer(const Handle<OptionletVolatilityStructure>& v =
-                                     Handle<OptionletVolatilityStructure>());
+                                    Handle<OptionletVolatilityStructure>(),
+                                    const TimingAdjustment timingAdjustment = Black76,
+                                    const Handle<Quote> correlation =
+                                    Handle<Quote>(boost::shared_ptr<Quote>(new SimpleQuote(1.0))));
 };
 
 %{
@@ -633,7 +670,11 @@ Leg _CmsLeg(const std::vector<Real>& nominals,
             const std::vector<Spread>& spreads = std::vector<Spread>(),
             const std::vector<Rate>& caps = std::vector<Rate>(),
             const std::vector<Rate>& floors = std::vector<Rate>(),
-            bool isInArrears = false) {
+            bool isInArrears = false,
+            const Period& exCouponPeriod = Period(),
+            const Calendar& exCouponCalendar = Calendar(),
+            const BusinessDayConvention exCouponConvention = Unadjusted,
+            bool exCouponEndOfMonth = false) {
     boost::shared_ptr<SwapIndex> swapIndex =
         boost::dynamic_pointer_cast<SwapIndex>(index);
     return QuantLib::CmsLeg(schedule, swapIndex)
@@ -645,6 +686,8 @@ Leg _CmsLeg(const std::vector<Real>& nominals,
         .withSpreads(spreads)
         .withCaps(caps)
         .withFloors(floors)
+        .withExCouponPeriod(exCouponPeriod, exCouponCalendar,
+                            exCouponConvention, exCouponEndOfMonth)
         .inArrears(isInArrears);
 }
 %}
@@ -662,7 +705,11 @@ Leg _CmsLeg(const std::vector<Real>& nominals,
             const std::vector<Spread>& spreads = std::vector<Spread>(),
             const std::vector<Rate>& caps = std::vector<Rate>(),
             const std::vector<Rate>& floors = std::vector<Rate>(),
-            bool isInArrears = false);
+            bool isInArrears = false,
+            const Period& exCouponPeriod = Period(),
+            const Calendar& exCouponCalendar = Calendar(),
+            const BusinessDayConvention exCouponConvention = Unadjusted,
+            bool exCouponEndOfMonth = false);
 
 %{
 Leg _CmsZeroLeg(const std::vector<Real>& nominals,
@@ -674,7 +721,11 @@ Leg _CmsZeroLeg(const std::vector<Real>& nominals,
                 const std::vector<Real>& gearings = std::vector<Real>(),
                 const std::vector<Spread>& spreads = std::vector<Spread>(),
                 const std::vector<Rate>& caps = std::vector<Rate>(),
-                const std::vector<Rate>& floors = std::vector<Rate>()) {
+                const std::vector<Rate>& floors = std::vector<Rate>(),
+                const Period& exCouponPeriod = Period(),
+                const Calendar& exCouponCalendar = Calendar(),
+                const BusinessDayConvention exCouponConvention = Unadjusted,
+                bool exCouponEndOfMonth = false) {
     boost::shared_ptr<SwapIndex> swapIndex =
         boost::dynamic_pointer_cast<SwapIndex>(index);
     return QuantLib::CmsLeg(schedule, swapIndex)
@@ -686,6 +737,8 @@ Leg _CmsZeroLeg(const std::vector<Real>& nominals,
         .withSpreads(spreads)
         .withCaps(caps)
         .withFloors(floors)
+        .withExCouponPeriod(exCouponPeriod, exCouponCalendar,
+                            exCouponConvention, exCouponEndOfMonth)
         .withZeroPayments();
 }
 %}
@@ -702,7 +755,11 @@ Leg _CmsZeroLeg(const std::vector<Real>& nominals,
                 const std::vector<Real>& gearings = std::vector<Real>(),
                 const std::vector<Spread>& spreads = std::vector<Spread>(),
                 const std::vector<Rate>& caps = std::vector<Rate>(),
-                const std::vector<Rate>& floors = std::vector<Rate>());
+                const std::vector<Rate>& floors = std::vector<Rate>(),
+                const Period& exCouponPeriod = Period(),
+                const Calendar& exCouponCalendar = Calendar(),
+                const BusinessDayConvention exCouponConvention = Unadjusted,
+                bool exCouponEndOfMonth = false);
 
 %{
 Leg _CmsSpreadLeg(const std::vector<Real>& nominals,
@@ -775,6 +832,38 @@ class CashFlows {
         nextCashFlowDate(const Leg& leg,
                          bool includeSettlementDateFlows,
                          Date settlementDate = Date());
+
+    %extend {
+
+        static boost::shared_ptr<CashFlow>
+        previousCashFlow(const Leg& leg,
+                         bool includeSettlementDateFlows,
+                         Date settlementDate = Date()) {
+            Leg::const_reverse_iterator i =
+                QuantLib::CashFlows::previousCashFlow(
+                    leg, includeSettlementDateFlows, settlementDate);
+
+            if (i == leg.rend())
+                return boost::shared_ptr<CashFlow>();
+            else
+                return *i;
+        }
+
+        static boost::shared_ptr<CashFlow>
+        nextCashFlow(const Leg& leg,
+                     bool includeSettlementDateFlows,
+                     Date settlementDate = Date()) {
+            Leg::const_iterator i =
+                QuantLib::CashFlows::nextCashFlow(
+                    leg, includeSettlementDateFlows, settlementDate);
+
+            if (i == leg.end())
+                return boost::shared_ptr<CashFlow>();
+            else
+                return *i;
+        }
+
+    }
 
     %extend {
         static Real npv(
