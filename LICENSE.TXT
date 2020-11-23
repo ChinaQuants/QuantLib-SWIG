@@ -12,6 +12,7 @@ QuantLib-SWIG is
     Copyright (C) 2008 Allen Kuo
     Copyright (C) 2008 Florent Grenier
     Copyright (C) 2009 Joseph Malicki
+    Copyright (C) 2009, 2017, 2018 Cheng Li
     Copyright (C) 2010 Andrea Odetti
     Copyright (C) 2010, 2011 Lluis Pujol Bajador
     Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2018, 2019, 2020 Klaus Spanderen
