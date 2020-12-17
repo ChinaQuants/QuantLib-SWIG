@@ -39,12 +39,12 @@ class ShiborSwapRateHelper: public RateHelper {
                 const Handle<Quote>& rate,
                 const Period& swapTenor,
                 Frequency fixedFreq,
-                const boost::shared_ptr<Shibor>& shiborIndex,
+                const ext::shared_ptr<Shibor>& shiborIndex,
                 const Period& fwdStart = 0*Days,
                 const Handle<YieldTermStructure>& discountingCurve
                                             = Handle<YieldTermStructure>());
 
-    boost::shared_ptr<ShiborSwap> swap();
+    ext::shared_ptr<ShiborSwap> swap();
 };
 
 %shared_ptr(SubPeriodsSwapRateHelper)
@@ -53,7 +53,7 @@ class SubPeriodsSwapRateHelper: public RateHelper {
     SubPeriodsSwapRateHelper(const Handle<Quote>& rate, const Period& swapTenor, Frequency fixedFreq,
                                  const Calendar& fixedCalendar, const DayCounter& fixedDayCount,
                                  BusinessDayConvention fixedConvention, const Period& floatPayTenor,
-                                 const boost::shared_ptr<IborIndex>& iborIndex, const DayCounter& floatingDayCount,
+                                 const ext::shared_ptr<IborIndex>& iborIndex, const DayCounter& floatingDayCount,
                                  DateGeneration::Rule rule = DateGeneration::Backward,
                                  QuantLib::Ext::SubPeriodsCoupon::Type type = QuantLib::Ext::SubPeriodsCoupon::Compounding,
                                  const Period& fwdStart = 0 * Days,

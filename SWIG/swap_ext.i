@@ -47,7 +47,7 @@ class ShiborSwap : public VanillaSwap {
                       const Period& swapTenor,
                       const Period& fixedTenor,
                       Rate fixedRate,
-                      const boost::shared_ptr<Shibor>& index);
+                      const ext::shared_ptr<Shibor>& index);
 };
 
 %shared_ptr(SubPeriodsSwap)
@@ -56,7 +56,7 @@ class SubPeriodsSwap: public Swap {
     SubPeriodsSwap(const Date& effectiveDate, Real nominal, const Period& swapTenor, bool isPayer,
                    const Period& fixedTenor, Rate fixedRate, const Calendar& fixedCalendar,
                    const DayCounter& fixedDayCount, BusinessDayConvention fixedConvention, const Period& floatPayTenor,
-                   const boost::shared_ptr<IborIndex>& iborIndex, const DayCounter& floatingDayCount,
+                   const ext::shared_ptr<IborIndex>& iborIndex, const DayCounter& floatingDayCount,
                    DateGeneration::Rule rule = DateGeneration::Backward);
 }; 
  
